@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { Patient } from './patient.entity';
 
@@ -29,5 +29,13 @@ export class PatientController {
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.patientService.remove(+id);
+    }
+
+    @Post('sendRequests')
+    sendRequests(
+        @Query('patientId') patientId: string,
+        @Query('location') location: string,
+    ) {
+        return this.patientService.sendRequests(+patientId, location);
     }
 }

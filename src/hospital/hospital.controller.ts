@@ -30,12 +30,4 @@ export class HospitalController {
     remove(@Param('id') id: string) {
         return this.hospitalService.remove(+id);
     }
-
-    @Post('send-requests')
-    sendRequests(
-        @Query('patientId') patientId: string,
-        @Query('location') location: string,
-    ) {
-        return this.hospitalService.sendRequests(+patientId, location);
-    }
 }
