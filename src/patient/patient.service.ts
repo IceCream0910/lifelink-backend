@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { Patient } from './patient.entity';
+import { NearbyHospital } from './nearby-hospital.interface';
 
 @Injectable()
 export class PatientService {
@@ -58,31 +59,40 @@ export class PatientService {
         if (error) throw error;
     }
 
-    async sendRequests(patientId: number, patientLocation: string): Promise<number[]> {
-        // 1. 환자 위치 기준으로 가까운 병원 10개 검색
+    async sendRequests(patientId: string): Promise<NearbyHospital[]> {
+        // 1. patientId를 가진 patient row의 location 가져오기
+        const { data: patient, error: patientError } = await this.supabase
+            .from('patients')
+            .select('location')
+            .eq('id', patientId)
+            .single();
+        if (patientError) throw patientError;
+
+        const patientLocation = patient.location;
+
+        // 2. 환자 위치 기준으로 가까운 병원 10개 검색
         const { data: nearbyHospitals, error } = await this.supabase
             .rpc('find_nearest_hospitals', {
-                patient_location: patientLocation,
+                lat: parseFloat(patientLocation.split(',')[0]),
+                long: parseFloat(patientLocation.split(',')[1]),
                 limit_count: 10
             });
         if (error) throw error;
 
-        // 2. 선택된 병원들의 requests 배열에 환자 ID 추가
-        const hospitalIds = [];
+        // 3. 선택된 병원들의 requests 배열에 환자 ID 추가
         for (const hospital of nearbyHospitals) {
-            const { data, error: updateError } = await this.supabase
+            const currentRequests = hospital.requests || [];
+            const { error: updateError } = await this.supabase
                 .from('hospitals')
                 .update({
-                    requests: [...hospital.requests, patientId]
+                    requests: [...currentRequests, patientId]
                 })
-                .eq('id', hospital.id)
-                .select('id')
-                .single();
+                .eq('id', hospital.id);
 
             if (updateError) throw updateError;
-            hospitalIds.push(data.id);
         }
 
-        return hospitalIds;
+        return nearbyHospitals;
     }
+
 }

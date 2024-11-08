@@ -31,11 +31,10 @@ export class PatientController {
         return this.patientService.remove(+id);
     }
 
-    @Post('sendRequests')
+    @Post('sendRequests/:patientId')
     sendRequests(
-        @Query('patientId') patientId: string,
-        @Query('location') location: string,
+        @Param('patientId') patientId: string,
     ) {
-        return this.patientService.sendRequests(+patientId, location);
+        return this.patientService.sendRequests(patientId);
     }
 }
