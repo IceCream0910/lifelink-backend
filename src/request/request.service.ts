@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
-import { Hospital } from './hospital.entity';
+import { Request } from './request.entity';
 
 @Injectable()
-export class HospitalService {
+export class RequestService {
     private supabase: SupabaseClient;
 
     constructor(private configService: ConfigService) {
@@ -13,39 +13,35 @@ export class HospitalService {
             process.env.SUPABASE_KEY);
     }
 
-    async findAll(): Promise<Hospital[]> {
-        const { data, error } = await this.supabase
-            .from('hospitals')
-            .select('*');
+    async findAll(): Promise<Request[]> {
+        const { data, error } = await this.supabase.from('requests').select('*');
         if (error) throw error;
         return data;
     }
 
-    async findOne(id: number): Promise<Hospital> {
+    async findOne(id: number, type: string): Promise<any[]> {
         const { data, error } = await this.supabase
-            .from('hospitals')
+            .from('requests')
             .select('*')
-            .eq('id', id)
-            .single();
+            .eq(type, id)
         if (error) throw error;
         return data;
     }
 
-    async create(hospital: Partial<Hospital>): Promise<Hospital> {
+    async create(patient: Partial<Request>): Promise<Request> {
         const { data, error } = await this.supabase
-            .from('hospitals')
-            .insert(hospital)
+            .from('requests')
+            .insert(patient)
             .select()
             .single();
         if (error) throw error;
         return data;
     }
 
-    async update(id: number, hospital: Partial<Hospital>): Promise<Hospital> {
-        const { lat, long, ...updateData } = hospital;
+    async update(id: number, request: Partial<Request>): Promise<Request> {
         const { data, error } = await this.supabase
-            .from('hospitals')
-            .update(updateData)
+            .from('requests')
+            .update(request)
             .eq('id', id)
             .select()
             .single();
@@ -53,11 +49,13 @@ export class HospitalService {
         return data;
     }
 
-    async remove(id: number): Promise<void> {
+    async remove(id: number, type: string): Promise<void> {
         const { error } = await this.supabase
-            .from('hospitals')
+            .from('requests')
             .delete()
-            .eq('id', id);
+            .eq(type, id)
+            .neq('status', 'completed'); // 매칭 상태 제외하고 삭제 
         if (error) throw error;
     }
+
 }

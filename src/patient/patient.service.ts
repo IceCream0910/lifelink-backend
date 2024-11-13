@@ -59,28 +59,44 @@ export class PatientService {
         if (error) throw error;
     }
 
-    async sendRequests(patientId: string): Promise<NearbyHospital[]> {
-        // 1. patientId를 가진 patient row의 location 가져오기
+    async sendRequests(patientId: string): Promise<any> {
         const { data: patient, error: patientError } = await this.supabase
             .from('patients')
-            .select('location')
+            .select('*')
             .eq('id', patientId)
             .single();
         if (patientError) throw patientError;
 
-        const patientLocation = patient.location;
+        const { lat, long } = patient;
 
-        // 2. 환자 위치 기준으로 가까운 병원 10개 검색
         const { data: nearbyHospitals, error } = await this.supabase
             .rpc('find_nearest_hospitals', {
-                lat: parseFloat(patientLocation.split(',')[0]),
-                long: parseFloat(patientLocation.split(',')[1]),
+                input_lat: lat,
+                input_long: long,
                 limit_count: 10
             });
         if (error) throw error;
 
-        // 3. 선택된 병원들의 requests 배열에 환자 ID 추가
         for (const hospital of nearbyHospitals) {
+            const { data: hospitalData, error: hospitalError } = await this.supabase
+                .from('hospitals')
+                .select('*')
+                .eq('id', hospital.id)
+                .single();
+            if (hospitalError) throw hospitalError;
+
+            const { error: insertError } = await this.supabase
+                .from('requests')
+                .insert({
+                    hospital_id: hospital.id,
+                    patient_id: patientId,
+                    status: 'pending',
+                    patient_data: patient,
+                    hospital_data: hospitalData,
+                    distance: hospital.dist_meters
+                })
+            if (insertError) throw insertError;
+
             const currentRequests = hospital.requests || [];
             const { error: updateError } = await this.supabase
                 .from('hospitals')
@@ -93,6 +109,6 @@ export class PatientService {
         }
 
         return nearbyHospitals;
-    }
 
+    }
 }

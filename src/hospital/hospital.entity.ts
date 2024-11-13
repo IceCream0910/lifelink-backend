@@ -4,4 +4,6 @@ export class Hospital {
     patients: any[];
     requests: any[];
     location: string;
+    lat: number;
+    long: number;
 }
