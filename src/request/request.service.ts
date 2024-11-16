@@ -38,24 +38,38 @@ export class RequestService {
         return data;
     }
 
-    async update(id: number, request: Partial<Request>): Promise<Request> {
-        const { data, error } = await this.supabase
+    async update(id: number, request: Partial<Request>): Promise<void> {
+        const { error } = await this.supabase
             .from('requests')
             .update(request)
             .eq('id', id)
             .select()
-            .single();
         if (error) throw error;
-        return data;
     }
 
     async remove(id: number, type: string): Promise<void> {
-        const { error } = await this.supabase
+        const { error: updateError } = await this.supabase
+            .from('requests')
+            .update({ status: 'deleted' })
+            .eq(type, id)
+            .neq('status', 'completed')
+        if (updateError) throw updateError;
+
+        const { error: deleteError } = await this.supabase
             .from('requests')
             .delete()
             .eq(type, id)
-            .neq('status', 'completed'); // 매칭 상태 제외하고 삭제 
-        if (error) throw error;
+            .neq('status', 'completed')
+        if (deleteError) throw deleteError;
     }
+
+    async removeAll(id: number, type: string): Promise<void> {
+        const { error: deleteError } = await this.supabase
+            .from('requests')
+            .delete()
+            .eq(type, id)
+        if (deleteError) throw deleteError;
+    }
+
 
 }

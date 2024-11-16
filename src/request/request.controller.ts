@@ -30,4 +30,9 @@ export class RequestController {
     remove(@Param('id') id: string, @Query('type') type: string) {
         return this.requestService.remove(+id, type);
     }
+
+    @Delete('all/:id')
+    removeAll(@Param('id') id: string, @Query('type') type: string) {
+        return this.requestService.removeAll(+id, type);
+    }
 }

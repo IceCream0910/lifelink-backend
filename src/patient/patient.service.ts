@@ -96,16 +96,6 @@ export class PatientService {
                     distance: hospital.dist_meters
                 })
             if (insertError) throw insertError;
-
-            const currentRequests = hospital.requests || [];
-            const { error: updateError } = await this.supabase
-                .from('hospitals')
-                .update({
-                    requests: [...currentRequests, patientId]
-                })
-                .eq('id', hospital.id);
-
-            if (updateError) throw updateError;
         }
 
         return nearbyHospitals;
